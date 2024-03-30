@@ -14,60 +14,86 @@ use Arris\Toolkit\YandexGeo\Exception\ServerError;
  */
 class Api
 {
-    /** дом */
+    /**
+     * Дом
+     */
     const KIND_HOUSE = 'house';
 
-    /** улица */
+    /**
+     * Улица
+     */
     const KIND_STREET = 'street';
 
-    /** станция метро */
+    /**
+     * Станция метро
+     */
     const KIND_METRO = 'metro';
 
-    /** район города */
+    /** Район города */
     const KIND_DISTRICT = 'district';
 
-    /** населенный пункт (город/поселок/деревня/село/...) */
+    /**
+     * Район области
+     */
+    const KIND_AREA = 'area';
+
+    /**
+     * Населенный пункт (город/поселок/деревня/село/...)
+     */
     const KIND_LOCALITY = 'locality';
 
-    /** русский (по умолчанию) */
+    /**
+     * русский (по умолчанию)
+     */
     const LANG_RU = 'ru-RU';
 
-    /** украинский */
+    /**
+     * украинский
+     */
     const LANG_UA = 'uk-UA';
 
-    /** белорусский */
+    /**
+     * белорусский
+     */
     const LANG_BY = 'be-BY';
 
-    /** американский английский */
+    /**
+     * Американский английский
+     */
     const LANG_US = 'en-US';
 
-    /** британский английский */
+    /**
+     * Британский английский
+     */
     const LANG_BR = 'en-BR';
 
-    /** турецкий (только для карты Турции) */
+    /**
+     * Турецкий (только для карты Турции)
+     */
     const LANG_TR = 'tr-TR';
 
     /**
      * @var string Версия используемого api
      */
-    protected $_version = '1.x';
+    protected string $_version = '1.x';
+
     /**
      * @var array
      */
-    protected $_filters = array();
+    protected array $_filters = [];
+
     /**
      * @var Response|null
      */
-    protected $_response;
+    protected ?Response $_response;
 
     /**
-     * @param null|string $version
+     * @param string|null $version
      */
-    public function __construct($version = null)
+    public function __construct(string $version = null)
     {
-        if (!empty($version)) {
-            $this->_version = (string)$version;
-        }
+        $this->_version = $version ?? $this->_version;
+
         $this->clear();
     }
 
@@ -78,11 +104,15 @@ class Api
      * @throws Exception\CurlError
      * @throws Exception\ServerError
      */
-    public function load(array $options = [])
+    public function load(array $options = []): Api
     {
-        $apiUrl = sprintf('https://geocode-maps.yandex.ru/%s/?%s', $this->_version, http_build_query($this->_filters));
+        $apiUrl = \sprintf(
+            'https://geocode-maps.yandex.ru/%s/?%s',
+            $this->_version,
+            \http_build_query($this->_filters)
+        );
 
-        $curl = curl_init($apiUrl);
+        $curl = \curl_init($apiUrl);
 
         $options += array(
             CURLOPT_RETURNTRANSFER => 1,
@@ -90,33 +120,40 @@ class Api
             CURLOPT_FOLLOWLOCATION => 1,
         );
 
-        curl_setopt_array($curl, $options);
+        \curl_setopt_array($curl, $options);
 
-        $data = curl_exec($curl);
-        $code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $data = \curl_exec($curl);
+        $code = \curl_getinfo($curl, CURLINFO_HTTP_CODE);
 
-        if (curl_errno($curl)) {
-            $error = curl_error($curl);
-            curl_close($curl);
+        if (\curl_errno($curl)) {
+            $error = \curl_error($curl);
+            \curl_close($curl);
             throw new CurlError($error);
         }
 
-        curl_close($curl);
+        \curl_close($curl);
 
-        if (in_array($code, array(500, 502))) {
-            $msg = strip_tags($data);
-            throw new ServerError(trim($msg), $code);
+        if (\in_array($code, [500, 502])) {
+            $msg = \strip_tags($data);
+            throw new ServerError(\trim($msg), $code);
         }
 
-        $data = json_decode($data, true);
+        $data = \json_decode($data, true);
 
         if (empty($data)) {
-            $msg = sprintf('Can\'t load data by url: %s', $apiUrl);
+            $msg = \sprintf("Can't load data by url: %s", $apiUrl);
             throw new Exception($msg);
         }
 
         if (!empty($data['error'])) {
-            throw new MapsError($data['error']['message'], $data['error']['code']);
+            if (\is_array($data['error'])) {
+                throw new MapsError($data['error']['message'], $data['error']['code']);
+            } else if (!empty($data['message'])) {
+                $code = !empty($data['statusCode']) ? $data['statusCode'] : 0;
+                throw new MapsError($data['message'], $code);
+            } else {
+                throw new MapsError($data['error']);
+            }
         }
 
         $this->_response = new Response($data);
@@ -136,17 +173,16 @@ class Api
      * Очистка фильтров гео-кодирования
      * @return self
      */
-    public function clear()
+    public function clear(): Api
     {
-        $this->_filters = array(
-            'format' => 'json'
-        );
+        $this->_filters = ['format' => 'json'];
+
         // указываем явно значения по-умолчанию
         $this
             ->setLang(self::LANG_RU)
             ->setOffset(0)
             ->setLimit(10);
-//            ->useAreaLimit(false);
+
         $this->_response = null;
         return $this;
     }
@@ -158,35 +194,28 @@ class Api
      * @param float $latitude Широта в градусах
      * @return self
      */
-    public function setPoint($longitude, $latitude)
+    public function setPoint(float $longitude, float $latitude): Api
     {
-        $longitude = (float)$longitude;
-        $latitude = (float)$latitude;
-
-        $this->_filters['geocode'] = sprintf('%F,%F', $longitude, $latitude);
+        $this->_filters['geocode'] = \sprintf('%F,%F', $longitude, $latitude);
 
         return $this;
     }
 
     /**
      * Географическая область поиска объекта
+     *
      * @param float $lengthLng Разница между максимальной и минимальной долготой в градусах
      * @param float $lengthLat Разница между максимальной и минимальной широтой в градусах
-     * @param null|float $longitude Долгота в градусах
-     * @param null|float $latitude Широта в градусах
+     * @param float|null $longitude Долгота в градусах
+     * @param float|null $latitude Широта в градусах
      * @return self
      */
-    public function setArea($lengthLng, $lengthLat, $longitude = null, $latitude = null)
+    public function setArea(float $lengthLng, float $lengthLat, float $longitude = null, float $latitude = null): Api
     {
-        $lengthLng = (float)$lengthLng;
-        $lengthLat = (float)$lengthLat;
-
-        $this->_filters['spn'] = sprintf('%f,%f', $lengthLng, $lengthLat);
+        $this->_filters['spn'] = \sprintf('%f,%f', $lengthLng, $lengthLat);
 
         if (!empty($longitude) && !empty($latitude)) {
-            $longitude = (float)$longitude;
-            $latitude = (float)$latitude;
-            $this->_filters['ll'] = sprintf('%f,%f', $longitude, $latitude);
+            $this->_filters['ll'] = \sprintf('%f,%f', $longitude, $latitude);
         }
 
         return $this;
@@ -197,7 +226,7 @@ class Api
      * @param boolean $areaLimit
      * @return self
      */
-    public function useAreaLimit($areaLimit)
+    public function useAreaLimit(bool $areaLimit): Api
     {
         $this->_filters['rspn'] = $areaLimit ? 1 : 0;
 
@@ -209,9 +238,10 @@ class Api
      * @param string $query
      * @return self
      */
-    public function setQuery($query)
+    public function setQuery(string $query): Api
     {
-        $this->_filters['geocode'] = (string)$query;
+        $this->_filters['geocode'] = $query;
+
         return $this;
     }
 
@@ -220,9 +250,9 @@ class Api
      * @param string $kind
      * @return self
      */
-    public function setKind($kind)
+    public function setKind(string $kind): Api
     {
-        $this->_filters['kind'] = (string)$kind;
+        $this->_filters['kind'] = $kind;
 
         return $this;
     }
@@ -232,9 +262,9 @@ class Api
      * @param int $limit
      * @return self
      */
-    public function setLimit($limit)
+    public function setLimit(int $limit): Api
     {
-        $this->_filters['results'] = (int)$limit;
+        $this->_filters['results'] = $limit;
 
         return $this;
     }
@@ -244,34 +274,38 @@ class Api
      * @param int $offset
      * @return self
      */
-    public function setOffset($offset)
+    public function setOffset(int $offset): Api
     {
-        $this->_filters['skip'] = (int)$offset;
+        $this->_filters['skip'] = $offset;
 
         return $this;
     }
 
     /**
      * Предпочитаемый язык описания объектов
+     *
      * @param string $lang
      * @return self
      */
-    public function setLang($lang)
+    public function setLang(string $lang): Api
     {
-        $this->_filters['lang'] = (string)$lang;
+        $this->_filters['lang'] = $lang;
 
         return $this;
     }
 
     /**
      * Ключ API Яндекс.Карт
+     *
+     * Создаем новый API-ключ на https://developer.tech.yandex.ru/services/3
      * @see https://tech.yandex.ru/maps/doc/geocoder/desc/concepts/input_params-docpage
+     *
      * @param string $token
      * @return self
      */
-    public function setToken($token)
+    public function setToken(string $token): Api
     {
-        $this->_filters['apikey'] = (string)$token;
+        $this->_filters['apikey'] = $token;
 
         return $this;
     }

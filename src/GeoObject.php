@@ -9,7 +9,7 @@ namespace Arris\Toolkit\YandexGeo;
  */
 class GeoObject
 {
-    protected $_addressHierarchy = [
+    protected array $_addressHierarchy = [
         'Country'               => ['AdministrativeArea'],
         'AdministrativeArea'    => ['SubAdministrativeArea', 'Locality'],
         'SubAdministrativeArea' => ['Locality'],
@@ -19,8 +19,8 @@ class GeoObject
         'Premise'               => []
     ];
 
-    protected $_data;
-    protected $_rawData;
+    protected array $_data;
+    protected array $_rawData;
 
     public function __construct(array $rawData)
     {
@@ -29,10 +29,11 @@ class GeoObject
             'Kind'      => $rawData['metaDataProperty']['GeocoderMetaData']['kind']
         ];
 
-        array_walk_recursive(
+        \array_walk_recursive(
             $rawData,
             static function ($value, $key) use (&$data) {
-                if (in_array(
+                if (
+                    \in_array(
                     $key,
                     [
                         'CountryName',
@@ -50,7 +51,7 @@ class GeoObject
             }
         );
         if (isset($rawData['Point']['pos'])) {
-            $pos = explode(' ', $rawData['Point']['pos']);
+            $pos = \explode(' ', $rawData['Point']['pos']);
             $data['Longitude'] = (float)$pos[0];
             $data['Latitude'] = (float)$pos[1];
         }
@@ -67,7 +68,7 @@ class GeoObject
      * Необработанные данные
      * @return array
      */
-    public function getRawData()
+    public function getRawData(): array
     {
         return $this->_rawData;
     }
@@ -76,7 +77,7 @@ class GeoObject
      * Обработанные данные
      * @return array
      */
-    public function getData()
+    public function getData(): array
     {
         return $this->_data;
     }
@@ -85,116 +86,116 @@ class GeoObject
      * Широта в градусах. Имеет десятичное представление с точностью до семи знаков после запятой
      * @return float|null
      */
-    public function getLatitude()
+    public function getLatitude(): ?float
     {
-        return isset($this->_data['Latitude']) ? $this->_data['Latitude'] : null;
+        return $this->_data['Latitude'] ?? null;
     }
 
     /**
      * Долгота в градусах. Имеет десятичное представление с точностью до семи знаков после запятой
      * @return float|null
      */
-    public function getLongitude()
+    public function getLongitude(): ?float
     {
-        return isset($this->_data['Longitude']) ? $this->_data['Longitude'] : null;
+        return $this->_data['Longitude'] ?? null;
     }
 
     /**
      * Полный адрес
      * @return string|null
      */
-    public function getAddress()
+    public function getAddress(): ?string
     {
-        return isset($this->_data['Address']) ? $this->_data['Address'] : null;
+        return $this->_data['Address'] ?? null;
     }
 
     /**
      * Тип
      * @return string|null
      */
-    public function getKind()
+    public function getKind(): ?string
     {
-        return isset($this->_data['Kind']) ? $this->_data['Kind'] : null;
+        return $this->_data['Kind'] ?? null;
     }
 
     /**
      * Страна
      * @return string|null
      */
-    public function getCountry()
+    public function getCountry(): ?string
     {
-        return isset($this->_data['CountryName']) ? $this->_data['CountryName'] : null;
+        return $this->_data['CountryName'] ?? null;
     }
 
     /**
      * Код страны
      * @return string|null
      */
-    public function getCountryCode()
+    public function getCountryCode(): ?string
     {
-        return isset($this->_data['CountryNameCode']) ? $this->_data['CountryNameCode'] : null;
+        return $this->_data['CountryNameCode'] ?? null;
     }
 
     /**
      * Административный округ
      * @return string|null
      */
-    public function getAdministrativeAreaName()
+    public function getAdministrativeAreaName(): ?string
     {
-        return isset($this->_data['AdministrativeAreaName']) ? $this->_data['AdministrativeAreaName'] : null;
+        return $this->_data['AdministrativeAreaName'] ?? null;
     }
 
     /**
      * Область/край
      * @return string|null
      */
-    public function getSubAdministrativeAreaName()
+    public function getSubAdministrativeAreaName(): ?string
     {
-        return isset($this->_data['SubAdministrativeAreaName']) ? $this->_data['SubAdministrativeAreaName'] : null;
+        return $this->_data['SubAdministrativeAreaName'] ?? null;
     }
 
     /**
      * Населенный пункт
      * @return string|null
      */
-    public function getLocalityName()
+    public function getLocalityName(): ?string
     {
-        return isset($this->_data['LocalityName']) ? $this->_data['LocalityName'] : null;
+        return $this->_data['LocalityName'] ?? null;
     }
 
     /**
      * @return string|null
      */
-    public function getDependentLocalityName()
+    public function getDependentLocalityName(): ?string
     {
-        return isset($this->_data['DependentLocalityName']) ? $this->_data['DependentLocalityName'] : null;
+        return $this->_data['DependentLocalityName'] ?? null;
     }
 
     /**
      * Улица
      * @return string|null
      */
-    public function getThoroughfareName()
+    public function getThoroughfareName(): ?string
     {
-        return isset($this->_data['ThoroughfareName']) ? $this->_data['ThoroughfareName'] : null;
+        return $this->_data['ThoroughfareName'] ?? null;
     }
 
     /**
      * Номер дома
      * @return string|null
      */
-    public function getPremiseNumber()
+    public function getPremiseNumber(): ?string
     {
-        return isset($this->_data['PremiseNumber']) ? $this->_data['PremiseNumber'] : null;
+        return $this->_data['PremiseNumber'] ?? null;
     }
 
     /**
      * Полный адрес
      * @return array
      */
-    public function getFullAddressParts()
+    public function getFullAddressParts(): array
     {
-        return array_unique(
+        return \array_unique(
             $this->_parseLevel(
                 $this->_rawData['metaDataProperty']['GeocoderMetaData']['AddressDetails']['Country'],
                 'Country'
@@ -209,7 +210,7 @@ class GeoObject
      * @param array $address
      * @return array
      */
-    protected function _parseLevel(array $level, $levelName, &$address = [])
+    protected function _parseLevel(array $level, string $levelName, array &$address = []): array
     {
         if (!isset($this->_addressHierarchy[$levelName])) {
             return [];
