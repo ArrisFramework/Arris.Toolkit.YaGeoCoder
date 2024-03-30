@@ -1,0 +1,21 @@
+{
+    "name": "karelwintersky/arris.toolkit.yandexgeo",
+    "description": "Yandex Geocoder, inpired by yandex/geo",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Karel Wintersky",
+            "email": "wombat@fontanka.ru"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Arris\\Toolkit\\YandexGeo\\": "src"
+        }
+    },
+    "require": {
+        "ext-curl": "*",
+      "ext-json": "*"
+    }
+}
