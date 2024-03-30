@@ -1,9 +1,9 @@
 {
     "name": "karelwintersky/arris.toolkit.yandexgeo",
-    "description": "Yandex Geocoder, inpired by yandex/geo",
+    "description": "Yandex Geocoder, inspired by yandex/geo",
     "type": "library",
     "keywords": [
-        "api", "yandex", "geo", "geocode", ",maps"
+        "api", "yandex", "geo", "geocode", "maps"
     ],
     "license": "MIT",
     "authors": [
